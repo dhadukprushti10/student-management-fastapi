@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Management System</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<!-- ================= SIDEBAR ================= -->
+
+<aside class="sidebar">
+
+    <h2>🎓 Student MS</h2>
+
+    <nav>
+        <a href="#dashboard">🏠 Dashboard</a>
+        <a href="#add-student">➕ Add Student</a>
+        <a href="#students">👨‍🎓 Students</a>
+    </nav>
+
+</aside>
+
+
+<!-- ================= MAIN CONTENT ================= -->
+
+<main class="main-content">
+
+    <!-- HEADER -->
+
+    <header class="header">
+
+        <div>
+            <h1>Student Management System</h1>
+
+            <p>
+                FastAPI + MySQL Student Management
+            </p>
+        </div>
+
+    </header>
+
+
+    <!-- ================= DASHBOARD ================= -->
+
+    <section id="dashboard" class="dashboard">
+
+        <div class="card">
+
+            <div class="card-icon">👨‍🎓</div>
+
+            <div>
+                <h3>Total Students</h3>
+                <p id="totalStudents">0</p>
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">💻</div>
+
+            <div>
+                <h3>Python Students</h3>
+                <p id="pythonStudents">0</p>
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">☕</div>
+
+            <div>
+                <h3>Java Students</h3>
+                <p id="javaStudents">0</p>
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">🌐</div>
+
+            <div>
+                <h3>Web Students</h3>
+                <p id="webStudents">0</p>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= ADD STUDENT ================= -->
+
+    <section id="add-student" class="section">
+
+        <h2 id="formTitle">
+            Add Student
+        </h2>
+
+
+        <form
+            class="student-form"
+            id="studentForm"
+        >
+
+            <!-- Hidden ID for Update -->
+
+            <input
+                type="hidden"
+                id="studentId"
+            >
+
+
+            <!-- Roll Number -->
+
+            <div class="form-group">
+
+                <label for="roll_no">
+                    Roll Number
+                </label>
+
+                <input
+                    type="text"
+                    id="roll_no"
+                    placeholder="Enter roll number"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Student Name -->
+
+            <div class="form-group">
+
+                <label for="name">
+                    Student Name
+                </label>
+
+                <input
+                    type="text"
+                    id="name"
+                    placeholder="Enter student name"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Course -->
+
+            <div class="form-group">
+
+                <label for="course">
+                    Course
+                </label>
+
+                <select
+                    id="course"
+                    required
+                >
+
+                    <option value="">
+                        Select Course
+                    </option>
+
+                    <option value="Python">
+                        Python
+                    </option>
+
+                    <option value="Java">
+                        Java
+                    </option>
+
+                    <option value="Web Development">
+                        Web Development
+                    </option>
+
+                    <option value="AIML">
+                        AIML
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Buttons -->
+
+            <button
+                type="submit"
+                class="btn add-btn"
+                id="submitBtn"
+            >
+                Add Student
+            </button>
+
+
+            <button
+                type="button"
+                class="btn cancel-btn"
+                id="cancelBtn"
+                onclick="cancelEdit()"
+                style="display:none;"
+            >
+                Cancel
+            </button>
+
+        </form>
+
+    </section>
+
+
+    <!-- ================= STUDENT LIST ================= -->
+
+    <section
+        id="students"
+        class="section"
+    >
+
+        <div class="section-header">
+
+            <div>
+
+                <h2>
+                    Student List
+                </h2>
+
+                <p>
+                    Data is loaded from MySQL database
+                </p>
+
+            </div>
+
+
+            <input
+                type="text"
+                id="search"
+                class="search"
+                placeholder="🔍 Search student..."
+            >
+
+        </div>
+
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Roll No
+                        </th>
+
+                        <th>
+                            Name
+                        </th>
+
+                        <th>
+                            Course
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody
+                    id="studentTableBody"
+                >
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer>
+
+        <p>
+            © 2026 Student Management System
+        </p>
+
+    </footer>
+
+</main>
+
+
+<!-- ================= JAVASCRIPT ================= -->
+
+<script>
+
+let allStudents = [];
+
+
+/* =========================================
+   LOAD STUDENTS
+========================================= */
+
+async function loadStudents() {
+
+    try {
+
+        const response =
+            await fetch("/api/students");
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Failed to load students"
+            );
+
+        }
+
+
+        allStudents =
+            await response.json();
+
+
+        displayStudents(
+            allStudents
+        );
+
+
+        await loadStats();
+
+    }
+
+    catch (error) {
+
+        alert(
+            "Cannot connect to FastAPI/MySQL: "
+            + error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   LOAD STATISTICS
+========================================= */
+
+async function loadStats() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/students/stats"
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Failed to load statistics"
+            );
+
+        }
+
+
+        const stats =
+            await response.json();
+
+
+        document.getElementById(
+            "totalStudents"
+        ).textContent = stats.total;
+
+
+        document.getElementById(
+            "pythonStudents"
+        ).textContent = stats.python;
+
+
+        document.getElementById(
+            "javaStudents"
+        ).textContent = stats.java;
+
+
+        document.getElementById(
+            "webStudents"
+        ).textContent = stats.web;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Stats Error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   DISPLAY STUDENTS
+========================================= */
+
+function displayStudents(students) {
+
+    const tbody =
+        document.getElementById(
+            "studentTableBody"
+        );
+
+
+    if (students.length === 0) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="4"
+                    style="text-align:center;"
+                >
+                    No students found
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML =
+        students.map(student => `
+
+        <tr>
+
+            <td>
+                ${escapeHtml(student.roll_no)}
+            </td>
+
+            <td>
+                ${escapeHtml(student.name)}
+            </td>
+
+            <td>
+                <span class="course">
+                    ${escapeHtml(student.course)}
+                </span>
+            </td>
+
+            <td>
+
+                <button
+                    class="btn edit-btn"
+                    onclick="editStudent(${student.id})"
+                >
+                    Edit
+                </button>
+
+                <button
+                    class="btn delete-btn"
+                    onclick="deleteStudent(${student.id})"
+                >
+                    Delete
+                </button>
+
+            </td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+/* =========================================
+   ESCAPE HTML
+========================================= */
+
+function escapeHtml(value) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent = value;
+
+    return div.innerHTML;
+
+}
+
+
+/* =========================================
+   ADD / UPDATE STUDENT
+========================================= */
+
+document
+    .getElementById("studentForm")
+    .addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+
+            const id =
+                document.getElementById(
+                    "studentId"
+                ).value;
+
+
+            const data = {
+
+                roll_no:
+                    document.getElementById(
+                        "roll_no"
+                    ).value.trim(),
+
+                name:
+                    document.getElementById(
+                        "name"
+                    ).value.trim(),
+
+                course:
+                    document.getElementById(
+                        "course"
+                    ).value
+
+            };
+
+
+            const url = id
+                ? `/api/students/${id}`
+                : "/api/students";
+
+
+            const method = id
+                ? "PUT"
+                : "POST";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        url,
+                        {
+                            method: method,
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(data)
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    alert(
+                        result.detail ||
+                        "Operation failed"
+                    );
+
+                    return;
+
+                }
+
+
+                alert(
+                    result.message ||
+                    "Saved successfully"
+                );
+
+
+                cancelEdit();
+
+
+                await loadStudents();
+
+            }
+
+            catch (error) {
+
+                alert(
+                    "Server error: "
+                    + error.message
+                );
+
+            }
+
+        }
+    );
+
+
+/* =========================================
+   EDIT STUDENT
+========================================= */
+
+function editStudent(id) {
+
+    const student =
+        allStudents.find(
+            s => s.id === id
+        );
+
+
+    if (!student) {
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "studentId"
+    ).value = student.id;
+
+
+    document.getElementById(
+        "roll_no"
+    ).value = student.roll_no;
+
+
+    document.getElementById(
+        "name"
+    ).value = student.name;
+
+
+    document.getElementById(
+        "course"
+    ).value = student.course;
+
+
+    document.getElementById(
+        "formTitle"
+    ).textContent =
+        "Update Student";
+
+
+    document.getElementById(
+        "submitBtn"
+    ).textContent =
+        "Update Student";
+
+
+    document.getElementById(
+        "cancelBtn"
+    ).style.display =
+        "inline-block";
+
+
+    document.getElementById(
+        "add-student"
+    ).scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+
+/* =========================================
+   CANCEL EDIT
+========================================= */
+
+function cancelEdit() {
+
+    document.getElementById(
+        "studentForm"
+    ).reset();
+
+
+    document.getElementById(
+        "studentId"
+    ).value = "";
+
+
+    document.getElementById(
+        "formTitle"
+    ).textContent =
+        "Add Student";
+
+
+    document.getElementById(
+        "submitBtn"
+    ).textContent =
+        "Add Student";
+
+
+    document.getElementById(
+        "cancelBtn"
+    ).style.display =
+        "none";
+
+}
+
+
+/* =========================================
+   DELETE STUDENT
+========================================= */
+
+async function deleteStudent(id) {
+
+    if (
+        !confirm(
+            "Delete this student?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/students/${id}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            alert(
+                result.detail ||
+                "Delete failed"
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            result.message
+        );
+
+
+        await loadStudents();
+
+    }
+
+    catch (error) {
+
+        alert(
+            "Server error: "
+            + error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   SEARCH STUDENTS
+========================================= */
+
+document
+    .getElementById("search")
+    .addEventListener(
+        "input",
+        function() {
+
+            const text =
+                this.value.toLowerCase();
+
+
+            const filtered =
+                allStudents.filter(
+                    student =>
+
+                        student.roll_no
+                            .toLowerCase()
+                            .includes(text)
+
+                        ||
+
+                        student.name
+                            .toLowerCase()
+                            .includes(text)
+
+                        ||
+
+                        student.course
+                            .toLowerCase()
+                            .includes(text)
+                );
+
+
+            displayStudents(
+                filtered
+            );
+
+        }
+    );
+
+
+/* =========================================
+   START APPLICATION
+========================================= */
+
+loadStudents();
+
+</script>
+
+</body>
+</html>
